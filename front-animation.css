@@ -1,0 +1,184 @@
+/* ---- Front Page Animation ---- */
+
+#slide-container {
+  width: 1080px;
+  height: 354px;
+  position: relative; top: 100px;
+  overflow: hidden;
+  margin: 0 auto;
+  display: block !important;
+}
+
+
+/* LOGO CONTAINER */
+
+#logo-container {
+  width: 525px;
+  height: 330px;
+  margin: 0 auto;
+  z-index: 1000;
+  position: relative;
+  -webkit-animation: shiftRight 1.5s ease-in-out 4s both;
+}
+
+#logo-container > * {
+  position: absolute;
+}
+
+/* LINE */
+
+#line {
+    position: absolute;
+    left: 485px;
+    top: 55px;
+    width: 125px;
+    overflow: hidden;
+    height: 80px;
+    -webkit-transform: rotate(162deg) scale(0.74);
+}
+#line img {
+    max-width: none !important;
+}
+
+/* DEFINITION */
+
+#kausina {
+    float: right;
+    width: 25%;
+    opacity: 0;
+    font-family: 'Goudy Old Style';
+    color: #fff;
+    -webkit-transform: translateY(-265px);
+    color: #143565 !important;
+    font-weight: bold;
+    text-shadow: 1px 0px 1px #eee;
+    position: relative;
+    top: -250px;
+}
+#definition {
+    font-size: 120%;
+    line-height: 1.3;
+    -webkit-animation: fadeTop 0.5s ease-in-out 5.5s both;
+}
+#def-title {
+    font-size: 300% !important;
+    font-family: 'Goudy Old Style';
+    color: #143565 !important;
+}
+
+/* LOGO LEAVES */
+
+#logo-leaves-outer {
+  width: 186px;
+  height: 187px;
+  top: 0;
+  left: 246px;
+  z-index: 50;
+}
+
+#logo-leaves-inner {
+  position: relative;
+  margin: 0 auto;
+  height: 0px;
+  width: 0px;
+  top: 93px;
+}
+
+#logo-leaves-inner img {
+  position: absolute;
+  z-index: -1;
+  max-width: none !important;
+}
+
+#logo-leaves-inner img[name="leaf-1"] {
+  width: 29px;
+  height: 36px;
+}
+
+#logo-leaves-inner img[name="leaf-2"] {
+  width: 54px;
+  height: 17px;
+}
+
+#logo-leaves-inner img[name="leaf-3"] {
+  width: 58px;
+  height: 39px;
+}
+
+#logo-leaves-inner img[name="leaf-4"] {
+  width: 25px;
+  height: 79px;
+}
+
+#logo-leaves-inner img[name="leaf-5"] {
+  width: 60px;
+  height: 65px;
+}
+
+#logo-leaves-inner img[name="leaf-6"] {
+  width: 93px;
+  height: 25px;
+}
+
+#logo-leaves-inner img[name="leaf-7"] {
+  width: 86px;
+  height: 43px;
+  opacity: 0;
+}
+
+/* KAUSINA TEXT */
+
+#logo-name {
+  height: 140px;
+  z-index: 40;
+  bottom: 51px;
+  width: 525px;
+}
+
+#logo-name img {
+  display: inline-block;
+  height: 140px;
+  margin: 0 0 0 -4px;
+  padding: 0;
+  opacity: 0;
+}
+
+#logo-name img[name="k"] {
+  width: 106px;
+  -webkit-animation: letters 1.25s both;
+}
+#logo-name img[name="a"] {
+  width: 66px;
+  -webkit-animation: letters 1.25s 0.05s both;
+}
+#logo-name img[name="u"] {
+  width: 84px;
+  -webkit-animation: letters 1.25s 0.1s both;
+}
+#logo-name img[name="s"] {
+  width: 54px;
+  -webkit-animation: letters 1.25s 0.15s both;
+}
+#logo-name img[name="i"] {
+  width: 44px;
+  -webkit-animation: letters 1.25s 0.2s both;
+}
+#logo-name img[name="n"] {
+  width: 88px;
+  -webkit-animation: letters 1.25s 0.25s both;
+}
+#logo-name img[name="a2"] {
+  width: 83px;
+  -webkit-animation: letters 1.25s 0.3s both;
+}
+
+/* LOGO TAGLINE */
+
+#logo-tagline {
+    width: 525px;
+    z-index: 30;
+    bottom: 0;
+    left: 0;
+    padding: 0;
+    -webkit-animation: tagline 0.7s 2.5s both;
+}
