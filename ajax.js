@@ -6,34 +6,62 @@ jQuery(document).ready(function($){
 #
 -------------------------------------------------*/ 
     
-    /* ---- HOUR UPDATES ---- */
+    /* ---- HOUR UPDATES (DASHBOARD AND TASK DETAILS) ---- */
     
-    $('.userhours button').click(function(){
-        $(this).after('<img id="loadinggif" style="width: 25px; display: inline-block" src="/wp-content/plugins/VirtualAssistant1.0/images/loading.gif" />');
-        var key;
-        ($('#name').length != 0) ? key = $('#name td:eq(1)').text() : key = $(this).parents('.userhours').find('label').text();
-        var newhours = $(this).siblings('input').val();
-        var data = {
+    $(document).on('click', '.userhours button', function(){
+        let button = this;
+        $(this).addClass('loading');
+        let id = '';
+        if ($('tr#user_id').length > 0) { //task details
+            id = $('tr#user_id').find('td:eq(1)').text();
+        }
+        else { //dashboard
+            id = $(this).parents('.userhours').attr('data-id');
+        };
+        let newhours = $(this).siblings('input').val();
+        let data = {
             action: 'update_hours',
-            key: key,
+            id: id,
             new_hours: newhours
         };
         $.post(ajaxurl, data, function(results){
-            $('#loadinggif').remove();
+            $(button).removeClass('loading');
         });
     });
-
+    
+    /* ---- QUICK JOB REQUEST (ADD TIMESTAMP) ---- */
+    
+    /*if (window.location.pathname == '/quick-job-request/') {
+        $('#field_8_5, #field_8_6, #field_8_7').css({'display':'none'});
+        $('.addJobRequest .modal-title').text('Quick Job Request');
+        let data = {
+            action: 'mysql_timestamp'
+        };
+        $.post(ajaxurl, data, function(timestamp){
+            $('#input_8_13').val(timestamp);
+        });
+    };*/
+    
+    $('#quickJobRequest').click(function(e){
+        e.preventDefault();
+        let data = {
+           action: 'mysql_timestamp',
+        };
+        $.post(ajaxurl, data, function(date){
+           window.open("/quick-job-request?sttime="+date, "_blank", "width=600,height=800,resizable,dependent");
+        });
+    });
 /*------------------------------------------------
 #
 #   TASK REQUESTS SELECT USER
 #
 -------------------------------------------------*/
     
-    $('#filteruser').change(function() {
+    $('#filteruser,#archfilter').change(function() {
         var client = $(this).val();
         var referer = window.location.pathname;
         $('#selectAll input').attr('checked',false);
-        $(this).append('<img id="loadinggif" style="margin: 3em auto; width: 30px; display: block;" src="/wp-content/plugins/VirtualAssistant1.0/images/loading.gif" />');
+        $(this).after('<div class="loading"></div>');
         var data = {
             action: 'client_change',
             client: client,
@@ -62,8 +90,55 @@ jQuery(document).ready(function($){
                     $('#message').attr('class','error').html('&nbsp;&nbsp;No incomplete tasks for selected user.').stop().fadeIn(200).delay(2000).fadeOut(200);
                 }     
             }
-            $('#loadinggif').remove();
+            $('.loading').remove();
        });
+    });
+    
+/*------------------------------------------------
+#
+#   TASK REQUESTS CHANGE STATUS (GROUP)
+#
+-------------------------------------------------*/  
+    
+    $('#group_status select').change(function(){
+        $('#group_status select').addClass('loading');
+        let status = $(this).val();
+        if (status != '---')  {
+            let checks = $('[type="checkbox"]:checked');
+            let tasks = [];
+            for (let i=0; i<checks.length; i++) {
+                tasks.push($(checks[i]).attr('value'));
+            };
+            let data = {
+                action: 'group_status',
+                status: status,
+                tasks: tasks
+            };
+
+            $.post(ajaxurl, data, function(results){
+                $('#group_status select').removeClass('loading');
+                let invalids = results.invalids;
+                for (let i=0; i<tasks.length; i++) {
+                    if (invalids.indexOf(tasks[i]) == -1) {
+                        let record = $('tr[data-row='+tasks[i]+']');
+                        let oBgColor= $(record).css('background-color');
+                        $(record).find('.current-status').html(status);
+                        $(record).find('[type=checkbox]').attr('checked',false);
+                        $(record).addClass('temp-success-task');
+                        setTimeout(function(){$(record).removeClass('temp-success-task');}, 1000);
+                    }
+                    else {
+                        $('tr[data-row='+tasks[i]+']').css({'background': 'rgba(51, 122, 183, 0.3)'});
+                    };
+                };
+                if (invalids.length) {
+                    alert('One or more of the selected tasks has not been started and therefore cannot be marked Complete. The tasks are marked out for you.');
+                }
+                else {
+                    
+                };
+            }, "json");
+        };
     });
 
 /*------------------------------------------------
@@ -86,31 +161,36 @@ jQuery(document).ready(function($){
     });
     
     $('#task_assign select').change(function() {
-        $('#task_assign').after('<img id="loadinggif" style="width: 20px; vertical-align: middle; margin-left: 5px;" src="/wp-content/plugins/VirtualAssistant1.0/images/loading.gif" />');
-        var assign_to = $(this).val();
-        var checks = $('[type="checkbox"]:checked');
-        var values = [];
-        for (var i=0; i<checks.length; i++) {
-            values.push($(checks[i]).attr('value'));
-        }
-        var data = {
-            'action': 'task_assign',
-            'assign': assign_to,
-            'checks': values
-        }
-
-        $.post(ajaxurl, data, function(results) {
-            $('#loadinggif').remove();
-            if (results) {
-                for (var i=0; i<values.length; i++) {
-                    $('[data-row="'+values[i]+'"]').find('.assistant').html(assign_to);
-                }
-                $('#message').attr('class','success').html('&nbsp;&nbsp;Task(s) successfully assigned!').stop().fadeIn(200).delay(3000).fadeOut(400);
+        let assign_to = $(this).val();
+        if (assign_to != '---') {
+            $('#task_assign').after('<div class="loading"></div>');
+            let checks = $('[type="checkbox"]:checked');
+            let tasks = [];
+            for (var i=0; i<checks.length; i++) {
+                tasks.push($(checks[i]).attr('value'));
+            };
+            let data = {
+                'action': 'task_assign',
+                'assign': assign_to,
+                'checks': tasks
             }
-            else {
-                $('#message').attr('class','error').html('&nbsp;&nbsp;Error - task(s) not assigned.').stop().fadeIn(200).delay(3000).fadeOut(400);
-            } 
-        });
+            $.post(ajaxurl, data, function(results) {
+                $('#loading').remove();
+                if (results) {
+                    for (var i=0; i<tasks.length; i++) {
+                        let record = $('[data-row="'+tasks[i]+'"]');
+                        $(record).find('.assistant').html(assign_to);
+                        $(record).find('[type=checkbox]').attr('checked',false);
+                        $(record).addClass('temp-success-task');
+                        setTimeout(function(){$(record).removeClass('temp-success-task');}, 1000);
+
+                    };
+                }
+                else {
+                    $('#message').attr('class','error').html('&nbsp;&nbsp;Error - task(s) not assigned.').stop().fadeIn(200).delay(3000).fadeOut(400);
+                }; 
+            });
+        };
     });
 
 /*------------------------
@@ -119,27 +199,27 @@ jQuery(document).ready(function($){
 
     $('#tdAssign select').change(function() {
         if ($(this).val() != '') {
-            $(this).after('<img id="loadinggif" style="width: 20px; vertical-align: middle; margin-left: 5px;" src="/wp-content/plugins/VirtualAssistant1.0/images/loading.gif" />');
+            let button = $(this);
+            $(button).addClass('loading');
             var assign = $(this).val();
             var id = window.location.search;
             id = id.split('=');
             id = id[1];
-                var data = {
+            let data = {
                 'action': 'td_task_assign',
                 'assign': assign,
                 'entry-id': id
-                }
+            };
             $.post(ajaxurl, data, function(results){
-                $('#loadinggif').remove();
+                $(button).removeClass('loading');
                 if (results) {
                     $('#assigned_to').html(assign);
-                    $('#message').attr('class','success').html('&nbsp;&nbsp;Task successfully assigned!').stop().fadeIn(200).delay(3000).fadeOut(400);
                 }
                 else {
                     $('#message').attr('class','error').html('&nbsp;&nbsp;Error - task not assigned').stop().fadeIn(200).delay(3000).fadeOut(400);  
-                }
+                };
             }).fail(function(jqXHR, textStatus, errorThrown) {
-                $('#loadinggif').remove();
+                $(button).removeClass('loading');
                 console.log('HTTP Status: '+jqXHR.status+', Error Message: '+textStatus+' - '+errorThrown);
             });
         }
@@ -147,7 +227,7 @@ jQuery(document).ready(function($){
 
     $('.emaildelete').on('click', function(){
         var file = $(this);
-        $(this).siblings().after('<img id="loadinggif" style="width: 20px; vertical-align: middle; margin-left: 5px; float:right;" src="/wp-content/plugins/VirtualAssistant1.0/images/loading.gif" />');
+        $(this).siblings().after('<img id="loading" style="width: 20px; vertical-align: middle; margin-left: 5px; float:right;" src="/wp-content/plugins/VirtualAssistant1.0/images/loading.svg" />');
         var slot= $(this).parent().attr('id');
         $(this).css({'display':'none'});
         var id = window.location.search;
@@ -160,24 +240,65 @@ jQuery(document).ready(function($){
         }
         $.post(ajaxurl, data, function(results){
             $(file).parent().empty();
-        })
-    })
+        });
+    });
+    
+    /*------------------------
+    #   Duplicate Task
+    ------------------------*/
+    
+    $('#duplicateTask').on('click', function(){
+    
+        //Popup Modal, which asks for complete by date, then button for submit
+        //https://www.gravityhelp.com/documentation/article/gform_field_value_parameter_name/
+        //Populate multiple fields using one function - this on ajaxfns.php
+        
+        let id = window.location.search;
+        id = id.split('=');
+        id = id[1];
+        let title = $('#newTitle').val();
+        let completeBy = $('#newCompleteBy').val();
+        let hour = $('#newHour').val();
+        let minute = $('#newMinutes').val();
+        let ampm = $('#AMPM').val();
+        let completeTime = '';
+        if (hour.length > 0) {
+            completeTime = hour+":"+minute+" "+ampm;
+        };
+        
+        let data = {
+            action: 'duplicate_task',
+            id: id,
+            title: title,
+            complete: completeBy,
+            complete_time: completeTime
+        };
+        
+        $(this).addClass('loading');
+        
+        $.post(ajaxurl, data, function(results){
+            $('#duplicateTask').removeClass('loading').addClass('completed');
+            window.location.href = 'https://va.bidslotprogram.com'+results;
+        });
+        
+    });
     
 /*------------------------------------------------
 #
-#   Admin Request Form Client Email Prepopulation
+#   Admin Request Form Client Email/Id Prepopulation
 #
 -------------------------------------------------*/
     
-    $('.clients-dropdown').change(function(){
-        var client = $('.clients-dropdown').find('select').val();
-            var data = {
-                'action': 'admin_request',
-                'client' : client
-            }
-            $.post(ajaxurl, data, function(results) {
-                $('.client-email input').attr('value', results);
-            })
+    $('.clients-dropdown').on('change', function(){
+        let clientId = $(this).find('select').val();
+        let data = {
+            'action': 'admin_request',
+            'client_id' : clientId
+        };
+        $.post(ajaxurl, data, function(results) {
+            $('.client-email input').attr('value', results.email);
+            $('.user-id input').attr('value',results.user_id);
+        }, 'json');
     });
 
 /*------------------------------------------------
@@ -186,7 +307,8 @@ jQuery(document).ready(function($){
 #
 -------------------------------------------------*/
     $('[value="Update Notes"]').click(function(){
-        $(this).after('<img id="loadinggif" style="width: 25px; display: inline-block" src="/wp-content/plugins/VirtualAssistant1.0/images/loading.gif" />');
+        let button = $(this);
+        $(button).addClass('loading');
         var notes = $('#notescontent').html();
         var id = window.location.search;
         id = id.split('=');
@@ -197,7 +319,7 @@ jQuery(document).ready(function($){
             'notes' : notes
         }
         $.post(ajaxurl, data, function(results){
-            $('#loadinggif').remove();
+            $(button).removeClass('loading');
             $('#notescontent').html(notes);
         })
     });
@@ -209,32 +331,38 @@ jQuery(document).ready(function($){
 -------------------------------------------------*/
     $("[name='status']").change(function(){
         if ($(this).val() != '—') {
-            $(this).after('<img id="loadinggif" style="width: 25px; display: inline-block" src="/wp-content/plugins/VirtualAssistant1.0/images/loading.gif" />');
-            var status = $(this).val();
-            var id = window.location.search;
+            let button = $(this);
+            $(button).addClass('loading');
+            let status = $(this).val();
+            let id = window.location.search;
             id = id.split('=');
             id = id[1];
-            var taskname = $('#name td:eq(1)').text();
+            let taskname = $('#name td:eq(1)').text();
+            let oldhours = $('[name="new_hours"]').val();
 
-            var date = new Date();
-            var hours = date.getHours();
-            var minutes = date.getMinutes();
-            if (hours > 12) {
-                hours -= 12;
-            }
-            if (minutes < 10) {
-                minutes = '0'+minutes;
-            }
-            var timestamp = (date.getMonth()+1)+"/"+date.getDate()+"/"+date.getFullYear()+", "+hours+":"+minutes+" PM";
-
-            var data = {
+            let date = new Date();
+            let hours = date.getHours();
+            let minutes = date.getMinutes();
+            let ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // the hour '0' should be '12'           
+            minutes = minutes < 10 ? '0'+minutes : minutes;
+            
+            let timestamp = (date.getMonth()+1)+"/"+date.getDate()+"/"+date.getFullYear()+", "+hours+":"+minutes+" "+ampm;
+            
+            let manualDiff = $('#oldHours').text() - oldhours; //for tasks not started or completed in VA. Hours updated in task before submission.
+            
+            let data = {
                 action:'update_status',
                 id: id,
                 status: status,
-                taskname: taskname
-            }
+                taskname: taskname,
+                oldhours: oldhours,
+                manualDiff: manualDiff
+            };
+            console.log(data);
             $.post(ajaxurl, data, function(sqlhours) {
-                $('#loadinggif').remove();
+                $(button).removeClass('loading');
                 $('#status').html('<strong>'+status+'</strong>');
                 switch (status) {
                     case "In Progress":
@@ -252,9 +380,10 @@ jQuery(document).ready(function($){
                     case "Not Started":
                         $('#task_start, #task_complete').empty();
                         $('#completeopt').css({'display':'none'});
-                }
+                        break;
+                };
             });
-        }
+        };
     });
     
 });
