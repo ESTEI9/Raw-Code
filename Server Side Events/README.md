@@ -1,4 +1,3 @@
-# Raw-Code
-Code samples for assessment
+# Server Side Events
 
-These code samples are simply for evaluation purposes only, to hightlight my current skills in various javascript libraries, HTML, CSS & PHP.
+New need for a clients virtual office created the need to learn server side events, differences in MIME types, etc.
