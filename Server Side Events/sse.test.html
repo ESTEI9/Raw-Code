@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.10.15/css/jquery.dataTables.min.css">
+        <style type="text/css">
+            .toWhite {
+                background:#fff !important;
+                transition:all 0.5s;
+            }
+        </style>
+        <script src='https://code.jquery.com/jquery-3.2.1.js'></script>
+        <script src="https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.10.15/js/dataTables.bootstrap.min.js"></script>
+        <script type="text/javascript">
+            $(document).ready(function(){
+                var dataset = '[{"id":"5749","name":"Eric Steinecke","title":"Test Task 2","status":"Not Started","complete_by":"2017-08-29","complete_time":"","frequency":""},{"id":"5748","name":"Eric Steinecke","title":"Test Task 1","status":"Not Started","complete_by":"2017-08-29","complete_time":"","frequency":""}]';
+                dataset = JSON.parse(dataset);
+                
+                //Initializes Table
+                var table = $('#tasksalt table').DataTable({
+                   data: dataset,
+                   columns: [
+                       {data: "id"},
+                       {title: ""},
+                       {data: "name", title:"Name"},
+                       {data: "title", title:"Title"},
+                       {data: "status", title:"Status"},
+                       {data: "complete_by", title:"Close"},
+                       {data: "complete_time", title:"Time"},
+                       {data: "frequency", title:"Frequency"}
+                   ],
+                    columnDefs: [
+                        {targets: 1, defaultContent: "<input type='checkbox' name='update_task'>"},
+                        {targets: 0, visible:false},
+                        {targets:3, render: function(data,type,row) {
+                            return "<a href='/task-details?id="+row.id+"'>"+data+"</a>";
+                        }}
+                    ]
+               });
+                //Captures IDs  
+                checks = [];
+                $('#tasksalt tbody').on('click','input', function(){
+                    let row = table.row($(this).parents('tr')).data();
+                    let id = row['id'];
+                    if ($(this).prop('checked')) {
+                            checks.push(id);
+                    }
+                    else {
+                        let index = checks.indexOf(id);
+                        if (index > -1) {
+                            checks.splice(index,1);
+                        };
+                    };
+                });
+
+                //check for browser support
+                if(typeof(EventSource)!=="undefined") {
+                    let source = new EventSource("sse.requests.php?admin=Eric Steinecke"); 
+                    let jsonSets = [dataset,dataset]; //init old data
+                    
+                    source.addEventListener('message',function(event){
+                        jsonSets[0] = jsonSets[1]; //set old data
+                        jsonSets[1] = JSON.parse(event.data); //set new data
+                        if(jsonSets[1] == null) {
+                            table.clear().draw();
+                        }
+                        else{
+                            let oldRowIds = jsonSets[0].map(function(row){
+                                return row['id'];
+                            });
+                            oldRowIds.sort();
+                            let lastId = oldRowIds[oldRowIds.length - 1];
+
+                            let newRowIds = jsonSets[1].map(function(row){
+                                return row['id'];
+                            });
+                            newRowIds.sort();
+
+                            oldRowIds.forEach(function(element,i) {
+
+                                //Delete Old Rows
+                                if(newRowIds.indexOf(element) == -1) {
+                                        let row = table.row(i-1);
+                                        let rowNode = row.node();
+                                        $(rowNode).css({background:'#E77'});
+                                        window.setTimeout(function(){$(rowNode).addClass('toWhite'); window.setTimeout(function(){row.invalidate().remove().draw();}, 500);},300);
+                                };
+
+                                //Update Rows (work on updating just cells)
+                                if(typeof(jsonSets[1][i]) !== 'undefined' && jsonSets[1][i]['id'] > lastId) {
+                                    oldData = table.rows(i).data()[0];
+                                    newData = jsonSets[1][i];
+                                    if (JSON.stringify(oldData) !== JSON.stringify(newData)) {
+                                        let rowNode = table.row(i).data(newData).draw().node();
+                                        $(rowNode).css({background:'#7E7'});
+                                        window.setTimeout(function(){$(rowNode).addClass('toWhite')},300);
+                                    };
+                                };
+                            });
+
+                            //Add New Rows
+                            newRowIds.forEach(function(element,i){
+                                if (oldRowIds.indexOf(element) == -1) {
+                                    table.row.add(jsonSets[1][i]).draw();
+                                };
+                            }); 
+                        };
+                    });   
+                }
+                else {
+                    document.getElementById("serverData").innerHTML="Whoops! Your browser doesn't receive server-sent events.";
+                };
+            });
+        </script>
+    </head>
+    <body>     
+        <div id="tasksalt" class="table-responsive">
+            <table class="table table-bordered table-condensed table-striped"></table>
+        </div>
+    </body>
+</html>
